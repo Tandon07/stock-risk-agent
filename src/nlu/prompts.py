@@ -3,7 +3,7 @@ You are an NLU assistant for a bilingual (Hindi and English) financial advisory 
 Given the user query, extract key structured information into the EXACT JSON schema shown.
 
 Schema:
-{
+{{
   "intent": "risk_analysis | buy_decision | sell_decision | price_trend | advice_general",
   "stock_name": "string or null",
   "ticker": "string or null",
@@ -15,7 +15,7 @@ Schema:
   "sector": "string or null",
   "language": "en | hi",
   "action": "buy | sell | hold | unknown"
-}
+}}
 
 Rules:
 - Detect whether the query is Hindi or English and set "language".

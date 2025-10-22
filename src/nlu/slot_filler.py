@@ -5,8 +5,8 @@ from typing import Optional
 from .prompts import SLOT_EXTRACTION_PROMPT
 from .llm_client import LLMClient
 
-from ..utils.lang_detect import detect_lang
-from ..utils.schema import SlotFrame, find_missing_mandatory
+from utils.lang_detect import detect_lang
+from utils.schema import SlotFrame, find_missing_mandatory
 
 class SlotFiller:
     def __init__(self, llm_client: Optional[LLMClient]=None):
