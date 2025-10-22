@@ -1,4 +1,3 @@
-# src/nlu/llm_client.py
 import os
 import json
 from typing import Dict, Optional
@@ -42,5 +41,4 @@ class GroqClient(LLMClientBase):
             raise ValueError("Groq returned empty response")
         return text.strip()
 
-# alias for consistency with rest of pipeline
 LLMClient = GroqClient
