@@ -1,0 +1,6 @@
+[project]
+name = "stock-risk-agent"
+version = "0.1.0"
+description = "An AI-powered stock risk analysis CLI tool."
+requires-python = ">=3.9"
+dependencies = ["openai", "langdetect", "pydantic", "requests"]
