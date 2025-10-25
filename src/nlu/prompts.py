@@ -5,16 +5,16 @@ Given the user query, extract key structured information into the EXACT JSON sch
 Schema:
 {{
   "intent": "risk_analysis | buy_decision | sell_decision | price_trend | advice_general",
-  "stock_name": "string or null",
-  "ticker": "string or null",
-  "capital": number or null,
-  "target_return_pct": number or null,
-  "investment_horizon": "short_term | medium_term | long_term | null",
-  "investor_type": "retail | institutional | conservative | aggressive | null",
-  "risk_tolerance": "low | medium | high | null",
-  "sector": "string or null",
-  "language": "en | hi",
-  "action": "buy | sell | hold | unknown"
+    "stock_name": "string or null",
+      "ticker": "string or null",
+        "capital": number or null,
+          "target_return_pct": number or null,
+            "investment_horizon": "short_term | medium_term | long_term | null",
+              "investor_type": "retail | institutional | conservative | aggressive | null",
+                "risk_tolerance": "low | medium | high | null",
+                  "sector": "string or null",
+                    "language": "en | hi",
+                      "action": "buy | sell | hold | unknown"
 }}
 
 Rules:

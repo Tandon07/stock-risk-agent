@@ -1,4 +1,3 @@
-# core
 python-dotenv>=1.0
 langdetect>=1.0.9
 pydantic>=1.10
@@ -10,5 +9,17 @@ langchain-groq
 langchain-core == 1.0.0
 transformers>=4.35
 accelerate>=1.8
+yfinance>=0.2.43
+pandas-ta>=0.3.14b0
+numpy>=1.26
+pandas
 
+# === News & Sentiment ===
+newsapi-python>=0.2.7
+transformers>=4.40
+torch>=2.2
+accelerate>=0.30
+
+# === Testing ===
+pytest>=7.4
 rich>=10.0

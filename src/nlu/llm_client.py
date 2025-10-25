@@ -18,7 +18,7 @@ class GroqClient(LLMClientBase):
     LLM client wrapper for Groq models (via langchain_groq).
     """
     def __init__(self, model: str = "llama-3.3-70b-versatile", temperature: float = 0.0):
-        api_key = os.get_env('GROQ_API_KEY')
+        api_key = os.getenv('GROQ_API_KEY')
         if not api_key:
             raise ValueError("Missing GROQ_API_KEY in environment.")
         self.model = model
