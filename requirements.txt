@@ -23,3 +23,7 @@ accelerate>=0.30
 # === Testing ===
 pytest>=7.4
 rich>=10.0
+loguru
+streamlit
+fuzzywuzzy 
+python-Levenshtein
