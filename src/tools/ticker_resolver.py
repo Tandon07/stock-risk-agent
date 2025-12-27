@@ -9,7 +9,7 @@ import json
 from typing import Dict, Optional, List
 import re
 from difflib import SequenceMatcher
-
+import os
 
 class AITickerResolver:
     def __init__(self, groq_api_key: Optional[str] = None):
@@ -459,7 +459,7 @@ def resolve_ticker(company_name: str) -> Dict:
         - Set groq_api_key or GROQ_API_KEY environment variable for LLM features
         - Install: pip install langchain-groq (only needed if using LLM fallback)
     """
-    groq_api_key = ""
+    groq_api_key = os.getenv("GROQ_API_KEY")
     use_llm = bool(groq_api_key)
     global _resolver_instance
     
