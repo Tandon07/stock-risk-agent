@@ -45,12 +45,21 @@ class SlotFiller:
         raw = self.llm.complete(prompt, temperature=0.0)
         parsed = self._parse_json(raw)
 
+        # --- Detect multiple stock names ---
+        if isinstance(parsed.get("stock_name"), str):
+            text = parsed["stock_name"].lower()
+            if any(x in text for x in [" vs ", " or ", ",", "compare"]):
+                names = re.split(r" vs | or |, ", parsed["stock_name"], flags=re.I)
+                parsed["stock_name"] = [n.strip() for n in names if n.strip()]
+
+
         # fallback: attach detected language
         if parsed is None:
             parsed = {"intent": None, "stock_name": None, "language": detect_lang(user_query)}
         else:
             if "language" not in parsed or not parsed.get("language"):
                 parsed["language"] = detect_lang(user_query)
+        
 
         return parsed
 
@@ -66,7 +75,7 @@ class SlotFiller:
         lang = slots.get("language", "en")
 
         # ⬅️ UPDATED: stock_screener DOES NOT require stock_name
-        if slots.get("intent") == "stock_screener":
+        if slots.get("intent") == "stock_screener" or slots.get("intent") == "sector_screener":
             # Only ask for missing intent (rare)
             missing = [m for m in missing if m != "stock_name"]
 

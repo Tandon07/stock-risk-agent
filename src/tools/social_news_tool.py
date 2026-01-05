@@ -2,23 +2,21 @@ import datetime
 import tweepy
 import praw
 from typing import List, Dict
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
-# --- CONFIGURATION (Add your credentials here) ---
-TWITTER_BEARER_TOKEN = "AAAAAAAAAAAAAAAAAAAAAHQO6gEAAAAAnzRTYZ0U70I0Z9mnkRPgEYXklJI%3D9BgHQLUpyjHKiKadc2gV0gKVosZF6Fj4n2L9sqXIs8HWQg9MbG"
+# --- CONFIGURATION ---
+TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
 
-REDDIT_CLIENT_ID = "YOUR_REDDIT_CLIENT_ID"
-REDDIT_CLIENT_SECRET = "YOUR_REDDIT_CLIENT_SECRET"
-REDDIT_USER_AGENT = "StockNewsScanner/1.0" # Any unique name works
-
-# --- INITIALIZATION ---
 # Twitter API v2 Client
 twitter_client = tweepy.Client(bearer_token=TWITTER_BEARER_TOKEN)
 
 # Reddit Client
 reddit_client = praw.Reddit(
-    client_id="16KH0wSC54WRygM1DaYnxA",
-    client_secret="Fhf0If_Hhe002ZhpscHqWPAceKuQ2w",
-    user_agent="AI-NEWS-AGENT"
+    client_id=os.getenv("client_id"),
+    client_secret=os.getenv("client_secret"),
+    user_agent=os.getenv("user_agent")
 )
 
 def fetch_reddit_posts(stock_name: str) -> List[Dict]:
@@ -28,9 +26,9 @@ def fetch_reddit_posts(stock_name: str) -> List[Dict]:
         target_subs = "stocks+investing+IndianStreetBets+IndianStockMarket+StockMarket"
         # query "Infosys" works better than natural sentences
         search_results = reddit_client.subreddit(target_subs).search(
-            f'"{stock_name}"', 
-            sort="new", 
-            time_filter="week", 
+            f'"{stock_name}"',
+            sort="new",
+            time_filter="week",
             limit=5
         )
         
@@ -78,18 +76,11 @@ def get_social_news(stock_name: str):
 
     # Fetch Data
     reddit_news = fetch_reddit_posts(stock_name)
-    twitter_news = fetch_twitter_posts(stock_name)
-    
+    try:
+        twitter_news = fetch_twitter_posts(stock_name)
+    except:
+        twitter_news = ""
+
     all_news = reddit_news + twitter_news
 
-    return all_news
-
-#     if not all_news:
-#         print("No recent social news found.")
-#         return
-
-
-
-# if __name__ == "__main__":
-#     ticker = input("Enter Stock Name (e.g. Infosys): ")
-#     print(run_stock_report(ticker))
+    return [all_news]

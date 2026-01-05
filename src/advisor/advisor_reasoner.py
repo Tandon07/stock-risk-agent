@@ -114,3 +114,153 @@ def generate_advisor_output(slots: dict, context: dict, analysis: dict, explanat
             "advisor_output": response.strip()
         }
     }
+
+def generate_comparison_output(context, language="en"):
+    client = LLMClient()
+
+    summary = []
+    for r in context["results"]:
+        summary.append({
+            "stock": r["stock_name"],
+            "risk_score": r["risk"]["risk_score"],
+            "classification": r["risk"]["classification"],
+            "confidence": r["risk"]["confidence"],
+            "reasons": r["risk"].get("reasons", [])
+        })
+
+    prompt = f"""
+You are a market analyst speaking in {language}.
+
+The user asked to compare stocks.
+Analyze them side-by-side and explain:
+
+- Which stock looks more stable right now
+- Which has higher risk or volatility
+- What kind of investor each stock may suit
+
+Do NOT give buy/sell advice.
+
+Comparison Data (JSON):
+{json.dumps(summary, indent=2, ensure_ascii=False)}
+
+End with:
+"⚠️ This is a data-based analytical insight, not financial advice."
+"""
+
+    return client.complete(prompt, temperature=0.3)
+
+def generate_stock_news_output(context, language="en"):
+    client = LLMClient()
+
+    prompt = f"""
+You are a market intelligence assistant speaking in {language}.
+
+The user wants to understand recent discussions and sentiment.
+
+Stock: {context}
+
+Social Media Data (last 7 days):
+Twitter posts:
+{context}
+
+Reddit discussions:
+{context}
+
+Your task:
+- Summarize key discussion themes
+- Describe overall sentiment (positive / neutral / negative)
+- Highlight one potential concern and one positive point
+- Keep it conversational and easy to understand
+
+Do NOT give investment advice.
+
+End with:
+"⚠️ This reflects social sentiment and discussions, not financial advice."
+"""
+
+    return client.complete(prompt, temperature=0.3)
+
+def generate_competitor_analysis_output(context, language="en"):
+    client = LLMClient()
+
+    summary = []
+    for c in context["competitors"]:
+        summary.append({
+            "stock": c["stock_name"],
+            "risk_score": c["risk"]["risk_score"],
+            "classification": c["risk"]["classification"],
+            "confidence": c["risk"]["confidence"],
+            "reasons": c["risk"].get("reasons", [])
+        })
+
+    prompt = f"""
+You are a market intelligence assistant speaking in {language}.
+
+The user wants to understand how competitors of {context['base_stock']} 
+are performing relative to each other.
+
+Based on the data below:
+- Identify which competitors look more stable
+- Identify which look more volatile or risky
+- Explain differences in simple, human language
+- Do NOT give buy/sell advice
+
+Competitor Data (JSON):
+{json.dumps(summary, indent=2, ensure_ascii=False)}
+
+Structure:
+1. Overall peer-group snapshot
+2. 1–2 relatively stable names
+3. 1–2 higher-risk or volatile names
+4. One clear takeaway for the user
+
+End with:
+"⚠️ This is a data-based analytical insight, not financial advice."
+"""
+
+    return client.complete(prompt, temperature=0.3)
+
+
+def generate_sector_screener_output(user_input, context, language="en"):
+    client = LLMClient()
+
+    prompt = f"""
+You are a market analyst speaking in {language}.
+
+The user asked for stocks in the {context['sector']} sector.
+Based on the user query answer it from the given context below.
+
+
+Context:
+{context['results']}
+
+User Query: {user_input}
+
+End with:
+"⚠️ This is a data-based analytical insight, not financial advice."
+"""
+    return client.complete(prompt, temperature=0.3)
+
+
+def generate_sector_trend_output(context, language="en"):
+    client = LLMClient()
+
+    prompt = f"""
+You are a market intelligence assistant speaking in {language}.
+
+The user wants to understand how the {context['sector']} sector
+is performing currently.
+
+Data:
+Average risk score: {context['avg_risk']}
+Overall trend: {context['trend']}
+
+Explain:
+- What this trend means
+- How investors are reacting
+- One caution to watch
+
+End with:
+"⚠️ This is a data-based analytical insight, not financial advice."
+"""
+    return client.complete(prompt, temperature=0.3)

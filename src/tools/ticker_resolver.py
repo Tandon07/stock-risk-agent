@@ -10,6 +10,9 @@ from typing import Dict, Optional, List
 import re
 from difflib import SequenceMatcher
 import os
+from urllib.parse import quote
+from bs4 import BeautifulSoup
+import time
 
 class AITickerResolver:
     def __init__(self, groq_api_key: Optional[str] = None):
@@ -161,42 +164,73 @@ class AITickerResolver:
         return None
     
     def _search_screener_in(self, company_name: str) -> Optional[Dict]:
-        """Search Screener.in for ticker info"""
+        """
+        Search Screener.in for ticker info using proper URL encoding
+        and scraping the company page for BSE/NSE codes
+        """
         try:
-            # Screener.in search
-            search_url = f"https://www.screener.in/api/company/search/"
-            headers = {
-                'User-Agent': 'Mozilla/5.0',
-                'Accept': 'application/json'
-            }
-            params = {'q': company_name}
+            # URL encode the company name to handle special characters like &
+            encoded_name = quote(company_name)
+            search_url = f"https://www.screener.in/api/company/search/?q={encoded_name}"
             
-            response = requests.get(search_url, headers=headers, params=params, timeout=10)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'application/json',
+                'Referer': 'https://www.screener.in/'
+            }
+            
+            print(f"  ↳ Screener.in search URL: {search_url}")
+            response = requests.get(search_url, headers=headers, timeout=10)
             
             if response.status_code == 200:
-                data = response.json()
+                search_results = response.json()
                 
-                if isinstance(data, list) and len(data) > 0:
-                    # Get the best match
-                    best_match = data[0]
-                    
-                    # Try to extract BSE code from URL
-                    url = best_match.get('url', '')
-                    bse_code = None
-                    
-                    bse_match = re.search(r'/company/([A-Z0-9]+)/', url)
-                    if bse_match:
-                        bse_code = bse_match.group(1)
-                    
+                if not search_results:
+                    return None
+                
+                # Get the FIRST result (most relevant)
+                first_result = search_results[0]
+                company_url = first_result.get('url')
+                
+                if not company_url:
+                    return None
+                
+                # Fetch the company page to get BSE/NSE codes
+                base_url = "https://www.screener.in"
+                full_url = f"{base_url}{company_url}"
+                
+                print(f"  ↳ Fetching company page: {full_url}")
+                time.sleep(0.5)  # Be respectful
+                
+                page_response = requests.get(full_url, headers=headers, timeout=10)
+                page_response.raise_for_status()
+                
+                # Parse the HTML
+                soup = BeautifulSoup(page_response.content, 'html.parser')
+                
+                # Extract company name from h1
+                company_heading = soup.find('h1')
+                company_name_full = company_heading.text.strip() if company_heading else first_result.get('name')
+                
+                # Search for BSE and NSE tickers in the page text
+                page_text = soup.get_text()
+                
+                bse_match = re.search(r'BSE:\s*(\d+)', page_text)
+                nse_match = re.search(r'NSE:\s*([A-Z&]+)', page_text)
+                
+                bse_code = bse_match.group(1) if bse_match else None
+                nse_code = nse_match.group(1) if nse_match else None
+                
+                if bse_code or nse_code:
                     return {
-                        'NSE': best_match.get('nse_code') or best_match.get('ticker'),
+                        'NSE': nse_code,
                         'BSE': bse_code,
-                        'company_name': best_match.get('name', company_name),
+                        'company_name': company_name_full,
                         'source': 'screener_in'
                     }
         
         except Exception as e:
-            pass
+            print(f"  ⚠️  Screener.in error: {e}")
         
         return None
     
@@ -340,7 +374,7 @@ Rules:
             if yahoo_result.get('company_name'):
                 result['company_name'] = yahoo_result['company_name']
         
-        # Strategy 2: Try Screener.in (might have different exchange info)
+        # Strategy 2: Try Screener.in (improved with proper encoding and scraping)
         print("  ↳ Trying Screener.in...")
         screener_result = self._search_screener_in(company_name)
         if screener_result:
@@ -431,14 +465,11 @@ Rules:
 _resolver_instance = None
 
 def resolve_ticker(company_name: str) -> Dict:
-    
     """
     Resolve company name to stock ticker(s) using AI and web search
     
     Args:
-        company_name: Company name (e.g., 'Infosys', 'Zomato', 'TCS')
-        groq_api_key: Groq API key (optional, for LLM extraction fallback)
-        use_llm: Whether to use LLM for extraction
+        company_name: Company name (e.g., 'Infosys', 'Zomato', 'TCS', 'M&M')
     
     Returns:
         Dictionary with ticker information
@@ -447,17 +478,13 @@ def resolve_ticker(company_name: str) -> Dict:
         >>> resolve_ticker('Infosys')
         {'NSE': 'INFY', 'BSE': '500209', 'company_name': 'Infosys Limited', 'source': 'yahoo_finance'}
         
-        >>> resolve_ticker('Zomato')
-        {'NSE': 'ZOMATO', 'BSE': '543320', 'company_name': 'Zomato Limited', 'source': 'yahoo_finance'}
-        
-        >>> resolve_ticker('Obscure Company', groq_api_key='your-key')
-        # Falls back to LLM extraction if primary sources fail
+        >>> resolve_ticker('M&M')
+        {'NSE': 'M&M', 'BSE': '500520', 'company_name': 'Mahindra & Mahindra Limited', 'source': 'screener_in'}
     
     Note:
-        - Works WITHOUT API key for 99% of cases using Yahoo Finance, Screener.in, Google
-        - LLM (Groq via LangChain) is only a fallback for edge cases
-        - Set groq_api_key or GROQ_API_KEY environment variable for LLM features
-        - Install: pip install langchain-groq (only needed if using LLM fallback)
+        - Automatically takes the FIRST (most relevant) search result
+        - Works WITHOUT API key for 99% of cases
+        - Proper URL encoding handles special characters like & in M&M
     """
     groq_api_key = os.getenv("GROQ_API_KEY")
     use_llm = bool(groq_api_key)
@@ -469,52 +496,31 @@ def resolve_ticker(company_name: str) -> Dict:
     return _resolver_instance.resolve_ticker(company_name, use_llm=use_llm)
 
 
-# # Example usage
-# if __name__ == "__main__":
-#     import os
+# Example usage
+if __name__ == "__main__":
+    print("=" * 70)
+    print("AI-Powered Indian Stock Ticker Resolver")
+    print("=" * 70)
     
-#     print("=" * 70)
-#     print("AI-Powered Indian Stock Ticker Resolver")
-#     print("=" * 70)
-#     print("\nUsing Yahoo Finance + Screener.in + Google (no API key needed)")
-#     print("For LLM fallback on edge cases, set GROQ_API_KEY environment variable")
-#     print("Install: pip install langchain-groq (optional, for LLM fallback)\n")
+    # Test cases including M&M
+    test_companies = [
+        'M&M',
+        'L&T Infotech',
+        'Infosys',
+        'TCS',
+        'Zomato'
+    ]
     
-#     # Test cases
-#     test_companies = [
-#         'Infosys',
-#         'Zomato',
-#         'Adani Wilmar',
-#         'Parle Industries',
-#         'TCS',
-#         'Reliance Industries',
-#         'HDFC Bank',
-#         'Tata Motors',
-#         'ITC',
-#         'Wipro',
-#         'Asian Paints',
-#         'Bajaj Finance',
-#         'ABB industries'
-#     ]
-    
-#     print("=" * 70)
-#     print("Test Results:")
-#     print("=" * 70)
-    
-#     # Get API key from environment
-#     groq_api_key = os.environ.get('GROQ_API_KEY')
-    
-#     for company in test_companies:
-#         result = resolve_ticker(company)
+    for company in test_companies:
+        result = resolve_ticker(company)
         
-#         print(f"\n{'='*70}")
-#         print(f"Query: '{company}'")
-#         print(f"Company: {result.get('company_name', 'N/A')}")
-#         print(f"NSE: {result.get('NSE', 'N/A')}")
-#         print(f"BSE: {result.get('BSE', 'N/A')}")
-#         if 'source' in result:
-#             print(f"Source: {result['source']}")
-#         if 'confidence' in result:
-#             print(f"Confidence: {result['confidence']}")
-#         if 'error' in result:
-#             print(f"❌ {result['error']}")
+        print(f"\n{'='*70}")
+        print(f"Query: '{company}'")
+        print(f"Company: {result.get('company_name', 'N/A')}")
+        print(f"NSE: {result.get('NSE', 'N/A')}")
+        print(f"BSE: {result.get('BSE', 'N/A')}")
+        if 'source' in result:
+            print(f"Source: {result['source']}")
+        if 'error' in result:
+            print(f"❌ {result['error']}")
+        print("="*70)

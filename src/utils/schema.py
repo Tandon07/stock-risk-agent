@@ -1,20 +1,41 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel
+from typing import Optional, Union, List
+
 
 class SlotFrame(BaseModel):
-    intent: str = Field(..., description="risk_analysis | buy_decision | sell_decision | price_trend | advice_general | stock_screener")
-    stock_name: Optional[str] = None
-    ticker: Optional[str] = None
-    capital: Optional[float] = None
-    target_return_pct: Optional[float] = None
-    investment_horizon: Optional[str] = None
-    investor_type: Optional[str] = None
-    risk_tolerance: Optional[str] = None
-    sector: Optional[str] = None
-    language: str = Field(..., description="en | hi")
-    action: Optional[str] = None
+    intent: Optional[str]
 
-MANDATORY_SLOTS = ["intent", "language"]
+    # 🔑 KEY CHANGE
+    stock_name: Optional[Union[str, List[str]]]
+
+    ticker: Optional[str]
+    capital: Optional[float]
+    target_return_pct: Optional[float]
+    investment_horizon: Optional[str]
+    investor_type: Optional[str]
+    risk_tolerance: Optional[str]
+    sector: Optional[str]
+    language: Optional[str]
+    action: Optional[str]
+
+
+INTENT_MANDATORY_SLOTS = {
+    "risk_analysis": ["intent", "language", "stock_name"],
+    "price_trend": ["intent", "language", "stock_name"],
+    "buy_decision": ["intent", "language", "stock_name"],
+    "stock_news": ["intent", "language", "stock_name"],
+    "stock_comparison": ["intent", "language", "stock_name"],
+    "competitor_analysis": ["intent", "language", "stock_name"],
+    "portfolio_guidance": ["intent", "language", "capital"],
+    "sector_screener": ["intent", "language", "sector"],
+    "sector_trend": ["intent", "language", "sector"],
+}
 
 def find_missing_mandatory(slots: dict):
-    return [k for k in MANDATORY_SLOTS if not slots.get(k)]
+    intent = slots.get("intent")
+    if not intent:
+        return ["intent"]
+
+    required = INTENT_MANDATORY_SLOTS.get(intent, ["intent", "language"])
+    return [k for k in required if not slots.get(k)]
+
