@@ -264,3 +264,64 @@ End with:
 "⚠️ This is a data-based analytical insight, not financial advice."
 """
     return client.complete(prompt, temperature=0.3)
+
+
+def generate_commodity_trend_output(context, language="en"):
+    price = context["price_data"]
+    sentiment = context["sentiment"]
+
+    prompt = f"""
+You are a market analyst.
+
+Commodity: {context['commodity']}
+
+Current price: {price['current_price']}
+Daily change: {price['daily_change_pct']}%
+30-day range: {price['last_30d_low']} – {price['last_30d_high']}
+
+Sentiment score: {sentiment.get('score')}
+
+Explain the trend using:
+- Price direction
+- Volatility
+- Sentiment alignment
+
+Do NOT give financial advice.
+Respond in {language}.
+End with a disclaimer.
+"""
+
+    return LLMClient().complete(prompt, temperature=0.2)
+
+
+
+def generate_commodity_news_output(context, language="en"):
+    commodity = context["commodity"]
+    news = context["news"]
+
+    prompt = f"""
+Summarize recent news and discussions about "{commodity}" in {language}.
+Focus on macro factors, supply-demand, geopolitics.
+
+News data:
+{news}
+
+End with:
+⚠️ Informational summary only, not financial advice.
+"""
+    client = LLMClient()
+    return client.complete(prompt, temperature=0.3)
+
+
+from nlu.llm_client import LLMClient
+
+def generate_info_general_output(context, language="en"):
+    search_results = context["search_results"]
+
+
+    return search_results
+
+def generate_portfolio_guidance_output(context, language="en"):
+    search_results = context["search_results"]
+
+    return search_results

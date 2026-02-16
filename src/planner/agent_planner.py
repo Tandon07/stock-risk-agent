@@ -4,23 +4,54 @@ from risk.risk_engine import compute_risk_score
 from tools.ticker_resolver import resolve_ticker
 from tools.news_tool import get_sentiment
 from tools.rag_tool import get_static_context
+from tools.commodity_resolver import resolve_commodity_symbol
+from tools.commodity_price_tool import get_commodity_price
 from tools.screener import run_screener
 from tools.competitor_search_tool import search_competitors
 from tools.sector_search_tool import search_sector_stocks
-
+from tools.web_search_tool import search_and_get_answer_advanced
 
 def plan_and_retrieve(slots: dict):
     intent = slots.get("intent")
     language = slots.get("language", "en")
+
+    # ==================================================
+    # INFO GENERAL (Procedural / How-to / Docs / Process)
+    # ==================================================
+    if intent == "info_general":
+        query_text = slots.get("query_text") or ""
+        if not query_text:
+            return {"error": "Query text required for general information"}
+
+        try:
+            search_results = search_and_get_answer_advanced(query_text)
+        except Exception as e:
+            return {"error": f"Web search failed: {e}"}
+
+        return {
+            "mode": "info_general",
+            "query_text": query_text,
+            "search_results": search_results,
+            "language": language
+        }
+
+    # ... keep your existing planner logic below ...
 
 
     # ==================================================
     # 2️⃣ PORTFOLIO GUIDANCE (capital-based, no ticker)
     # ==================================================
     if intent == "portfolio_guidance":
+        query_text = slots.get("query_text") or ""
+        try:
+            search_results = search_and_get_answer_advanced(query_text)
+        except Exception as e:
+            return {"error": f"Web search failed: {e}"}
+
         return {
             "mode": "portfolio_guidance",
             "capital": slots.get("capital"),
+            "search_results": search_results,
             "language": language
         }
 
@@ -298,10 +329,58 @@ def plan_and_retrieve(slots: dict):
             "language": language
         }
 
+
+    # ==================================================
+    # COMMODITY TREND
+    # ==================================================
+    if intent == "commodity_trend":
+        commodity = slots.get("commodity")
+
+        if not commodity:
+            return {"error": "Commodity name required"}
+
+        price_data = get_commodity_price(commodity)
+        sentiment = get_sentiment(commodity)
+
+        return {
+            "mode": "commodity_trend",
+            "commodity": commodity,
+            "price_data": price_data,
+            "sentiment": sentiment,
+            "language": language
+        }
+
+    # ==================================================
+    # COMMODITY NEWS
+    # ==================================================
+    if intent == "commodity_news":
+        commodity = slots.get("commodity")
+        language = slots.get("language", "en")
+
+        try:
+            sentiment = get_sentiment(commodity)
+        except Exception as e:
+            return {"error": str(e)}
+
+        return {
+            "mode": "commodity_news",
+            "commodity": commodity,
+            "news": sentiment,
+            "language": language
+        }
+
+
     # ==================================================
     # 5️⃣ SINGLE STOCK MODES (trend, risk, buy_decision)
     # ==================================================
     stock_name = slots.get("stock_name")
+
+    # 🔒 Normalize single-stock cases
+    if isinstance(stock_name, list):
+        if len(stock_name) == 1:
+            stock_name = stock_name[0]
+            slots["stock_name"] = stock_name
+
 
     if not stock_name:
         return {"error": "No stock specified"}

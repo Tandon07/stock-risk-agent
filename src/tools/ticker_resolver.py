@@ -1,9 +1,3 @@
-"""
-AI-Powered Indian Stock Ticker Resolver
-Uses web search + multiple APIs to extract ticker information
-Always accurate and up-to-date!
-"""
-
 import requests
 import json
 from typing import Dict, Optional, List
@@ -504,11 +498,9 @@ if __name__ == "__main__":
     
     # Test cases including M&M
     test_companies = [
-        'M&M',
-        'L&T Infotech',
-        'Infosys',
-        'TCS',
-        'Zomato'
+        'gold',
+        'silver',
+        'copper'
     ]
     
     for company in test_companies:
