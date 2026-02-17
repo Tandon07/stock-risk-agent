@@ -4,7 +4,6 @@ from tools.price_tool import get_price_data
 from tools.fundamentals_tool import get_fundamentals
 from risk.risk_engine import compute_risk_score
 
-# Basic list (you can expand later)
 WATCHLIST = [
     "INFY.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "RELIANCE.NS",
     "HINDUNILVR.NS", "ITC.NS", "LT.NS", "SBIN.NS", "AXISBANK.NS"
@@ -37,6 +36,7 @@ def run_screener(slots):
 
     # sort by lowest risk
     ranked = sorted(candidates, key=lambda x: x["risk"]["risk_score"])
+    print(ranked)
 
     # keep top 5 safest
     return ranked[:5]

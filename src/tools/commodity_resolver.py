@@ -52,8 +52,8 @@ def resolve_commodity_symbol(name: str) -> str | None:
     return None
 
 
-print(resolve_commodity_symbol("gold price")      )  # "GOLD"
-print(resolve_commodity_symbol("crude oil today") ) # "CRUDEOIL"
-print(resolve_commodity_symbol("natural gas mcx") ) # "NATGAS"
-print(resolve_commodity_symbol("jeera futures")   ) # "JEERA"
-print(resolve_commodity_symbol("silver")          ) # "SILVER"
+# print(resolve_commodity_symbol("gold price")      )  # "GOLD"
+# print(resolve_commodity_symbol("crude oil today") ) # "CRUDEOIL"
+# print(resolve_commodity_symbol("natural gas mcx") ) # "NATGAS"
+# print(resolve_commodity_symbol("jeera futures")   ) # "JEERA"
+# print(resolve_commodity_symbol("silver")          ) # "SILVER"

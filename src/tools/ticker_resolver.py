@@ -296,7 +296,7 @@ Rules:
         try:
             # Initialize Groq LLM via LangChain
             llm = self.ChatGroq(
-                model="llama-3.3-70b-versatile",  # Fast and accurate
+                model="llama-3.1-8b-instant",  # Fast and accurate
                 groq_api_key=self.groq_api_key,
                 temperature=0,  # Deterministic output
                 max_tokens=500
